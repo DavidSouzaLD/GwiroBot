@@ -30,7 +30,7 @@ class Engine:
         self.last_cycle_at: str | None = None
         self._lock = threading.Lock()
         self._stop = threading.Event()
-        self._thread = threading.Thread(target=self._loop, name="ogwiro-scheduler", daemon=True)
+        self._thread = threading.Thread(target=self._loop, name="gwiro-scheduler", daemon=True)
         self._thread.start()
         for shop in store.shops():
             if shop.get("enabled") and shop.get("bot", {}).get("autostart"):
@@ -131,11 +131,11 @@ class Engine:
         if channel in {"telegram", "whatsapp", "both", "none"}:
             config["channels"]["mode"] = channel
         sample = {
-            "title": "Oferta de teste do Ogwiro",
+            "title": "Oferta de teste do Gwiro",
             "priceLabel": "R$ 79,90",
             "originalLabel": "R$ 149,90",
             "discount": 47,
-            "storeLabel": "Ogwiro",
+            "storeLabel": "Gwiro",
             "url": "https://example.com/oferta-teste",
             "store": "mercadolivre",
             "keyword": "teste",

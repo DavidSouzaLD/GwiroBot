@@ -1,4 +1,4 @@
-"""Painel web e API local do Ogwiro."""
+"""Painel web e API local do Gwiro."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ APP = App()
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "Ogwiro/1.0"
+    server_version = "Gwiro/1.0"
 
     def do_GET(self) -> None:
         path = urlparse(self.path).path
@@ -225,7 +225,7 @@ def constant_equal(left: str, right: str) -> bool:
 
 def main() -> None:
     server = ThreadingHTTPServer((HOST, PORT), Handler)
-    print(f"Ogwiro no ar: http://{HOST}:{PORT}")
+    print(f"Gwiro no ar: http://{HOST}:{PORT}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

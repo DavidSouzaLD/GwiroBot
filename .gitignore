@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+
+# Credenciais, histórico e perfil do Chrome ficam só nesta máquina.
+data/config.json
+data/logs.json
+data/offers.json
+data/state.json
+data/ml_profile/

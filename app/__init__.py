@@ -1,1 +1,1 @@
-"""Ogwiro — captura de ofertas e envio para Telegram e WhatsApp."""
+"""Gwiro — captura de ofertas e envio para Telegram e WhatsApp."""

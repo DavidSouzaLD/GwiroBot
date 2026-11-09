@@ -1,0 +1,130 @@
+{
+  "dashboard": {
+    "token": "",
+    "showHints": true
+  },
+  "activeShop": "principal",
+  "shops": [
+    {
+      "description": "",
+      "bot": {
+        "autostart": false,
+        "runOnStart": true
+      },
+      "timing": {
+        "delayBetweenMessagesMs": 2500,
+        "maxOffersPerCycle": 5,
+        "maxPerMarketplace": 3,
+        "dedupHours": 48,
+        "quietHoursEnabled": false,
+        "quietStart": "23:00",
+        "quietEnd": "08:00",
+        "requestTimeoutSec": 20
+      },
+      "message": {
+        "template": "🔥 {title}\n\n❌ De: {original}\n✅ Por: {price}  🔻 -{discount}%\n{extra}\n\n{storeLine}"
+      },
+      "niches": [
+        {
+          "id": "eletronicos",
+          "name": "Eletrônicos",
+          "enabled": true,
+          "keywords": "fone bluetooth\nsmartwatch\ncarregador turbo",
+          "minDiscount": 15,
+          "minPrice": 0,
+          "maxPrice": 0,
+          "stores": ["mercadolivre", "amazon", "shopee", "aliexpress"]
+        },
+        {
+          "id": "casa",
+          "name": "Casa e cozinha",
+          "enabled": true,
+          "keywords": "air fryer\nliquidificador\norganizador",
+          "minDiscount": 20,
+          "minPrice": 0,
+          "maxPrice": 0,
+          "stores": ["mercadolivre", "amazon", "shopee", "aliexpress"]
+        },
+        {
+          "id": "beleza",
+          "name": "Beleza",
+          "enabled": false,
+          "keywords": "perfume\nsecador de cabelo",
+          "minDiscount": 15,
+          "minPrice": 0,
+          "maxPrice": 0,
+          "stores": ["mercadolivre", "amazon", "shopee", "aliexpress"]
+        }
+      ],
+      "channels": {
+        "mode": "telegram",
+        "telegram": {
+          "botToken": "",
+          "chatId": ""
+        },
+        "whatsapp": {
+          "accessToken": "",
+          "phoneNumberId": "",
+          "recipient": "",
+          "apiVersion": "v21.0",
+          "delivery": "text",
+          "templateName": "",
+          "templateLanguage": "pt_BR"
+        }
+      },
+      "marketplaces": {
+        "mercadolivre": {
+          "enabled": true,
+          "intervalSec": 300,
+          "site": "MLB",
+          "keywords": "fone bluetooth\nair fryer\nsmartwatch",
+          "minDiscount": 15,
+          "limit": 8,
+          "sort": "relevance",
+          "mattTool": "",
+          "mattWord": "gwiro"
+        },
+        "amazon": {
+          "enabled": false,
+          "intervalSec": 600,
+          "accessKey": "",
+          "secretKey": "",
+          "partnerTag": "",
+          "host": "webservices.amazon.com.br",
+          "region": "us-east-1",
+          "marketplace": "www.amazon.com.br",
+          "keywords": "oferta do dia",
+          "minDiscount": 10,
+          "limit": 5
+        },
+        "shopee": {
+          "enabled": false,
+          "intervalSec": 600,
+          "appId": "",
+          "secret": "",
+          "keywords": "fone bluetooth",
+          "minDiscount": 15,
+          "limit": 8,
+          "priceDivisor": 1
+        },
+        "aliexpress": {
+          "enabled": false,
+          "intervalSec": 600,
+          "appKey": "",
+          "appSecret": "",
+          "trackingId": "",
+          "keywords": "fone bluetooth",
+          "minDiscount": 20,
+          "limit": 8,
+          "sort": "LAST_VOLUME_DESC",
+          "currency": "BRL",
+          "language": "PT",
+          "shipTo": "BR"
+        }
+      },
+      "id": "principal",
+      "name": "Loja principal",
+      "enabled": true
+    }
+  ]
+}

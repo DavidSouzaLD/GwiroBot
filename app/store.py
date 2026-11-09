@@ -109,7 +109,7 @@ def shop_body() -> dict:
                 "limit": 8,
                 "sort": "relevance",
                 "mattTool": "",
-                "mattWord": "ogwiro",
+                "mattWord": "gwiro",
             },
             "amazon": {
                 "enabled": False,

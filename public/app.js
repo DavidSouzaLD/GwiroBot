@@ -60,7 +60,7 @@ const sample = {
   storeLine: "💛 Mercado Livre",
 };
 
-let token = sessionStorage.getItem("ogwiro-token") || "";
+let token = sessionStorage.getItem("gwiro-token") || "";
 let shops = [];
 let openGroups = [];
 let busyShopId = "";
@@ -177,7 +177,7 @@ function applyBundle(payload) {
 
 function readOpenGroups() {
   try {
-    const raw = JSON.parse(localStorage.getItem("ogwiro-open-groups") || "[]");
+    const raw = JSON.parse(localStorage.getItem("gwiro-open-groups") || "[]");
     if (Array.isArray(raw)) openGroups = raw.filter((id) => typeof id === "string");
   } catch {
     openGroups = [];
@@ -188,13 +188,13 @@ function rememberOpen() {
   const ids = new Set(shops.map((shop) => shop.id));
   openGroups = openGroups.filter((id) => ids.has(id));
   if (config && !openGroups.includes(config.id)) openGroups.push(config.id);
-  localStorage.setItem("ogwiro-open-groups", JSON.stringify(openGroups));
+  localStorage.setItem("gwiro-open-groups", JSON.stringify(openGroups));
 }
 
 function pinGroup(id) {
   if (!id || openGroups.includes(id)) return;
   openGroups.push(id);
-  localStorage.setItem("ogwiro-open-groups", JSON.stringify(openGroups));
+  localStorage.setItem("gwiro-open-groups", JSON.stringify(openGroups));
 }
 
 function renderShopSwitch() {
@@ -465,10 +465,10 @@ async function saveConfig(silent = false) {
   cleared = new Set();
   if (removingPassword) {
     token = "";
-    sessionStorage.removeItem("ogwiro-token");
+    sessionStorage.removeItem("gwiro-token");
   } else if (typedPassword) {
     token = typedPassword;
-    sessionStorage.setItem("ogwiro-token", token);
+    sessionStorage.setItem("gwiro-token", token);
   }
   applyBundle(payload);
   if (!silent) toast("Configuração salva.");
@@ -544,7 +544,7 @@ async function closeOpenGroup(id) {
   if (openGroups.length < 2) return;
   const remaining = openGroups.filter((item) => item !== id);
   openGroups = remaining;
-  localStorage.setItem("ogwiro-open-groups", JSON.stringify(openGroups));
+  localStorage.setItem("gwiro-open-groups", JSON.stringify(openGroups));
   if (config?.id !== id) {
     renderOpenGroups();
     return;
@@ -1211,7 +1211,7 @@ $("#loginForm").addEventListener("submit", async (event) => {
     return;
   }
   token = data.token || given;
-  sessionStorage.setItem("ogwiro-token", token);
+  sessionStorage.setItem("gwiro-token", token);
   hideLogin();
   await boot();
 });

@@ -172,7 +172,7 @@ def collect_ml(plans: list[dict], limit: int, timeout: int) -> list[dict]:
 class _MlBrowser:
     def __init__(self) -> None:
         self._jobs: queue.Queue = queue.Queue()
-        self._thread = threading.Thread(target=self._loop, name="ogwiro-ml", daemon=True)
+        self._thread = threading.Thread(target=self._loop, name="gwiro-ml", daemon=True)
         self._thread.start()
 
     def call(self, plans: list[dict], timeout: int) -> list[dict]:
@@ -793,7 +793,7 @@ FETCHERS = {
 def request_json(url: str, data: bytes | None = None, headers: dict | None = None, timeout: int = 20) -> dict:
     request = urllib.request.Request(url, data=data, method="POST" if data is not None else "GET")
     request.add_header("Accept", "application/json")
-    request.add_header("User-Agent", "OgwiroOfertas/1.0")
+    request.add_header("User-Agent", "GwiroOfertas/1.0")
     for key, value in (headers or {}).items():
         request.add_header(key, value)
     try:
