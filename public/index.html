@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ogwiro · ofertas</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23111'/%3E%3Ctext x='16' y='22' text-anchor='middle' fill='white' font-size='16' font-family='sans-serif'%3EO%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="/styles.css" rel="stylesheet">
+</head>
+<body>
+  <div id="login" class="login-gate d-none">
+    <form class="login-card" id="loginForm">
+      <div class="kicker mb-2">Ogwiro</div>
+      <h1 class="h4 mb-2">Painel protegido</h1>
+      <p class="text-secondary mb-3">Digite a senha definida nas configurações.</p>
+      <input id="loginToken" class="form-control mb-3" type="password" placeholder="Senha do painel" autocomplete="current-password">
+      <button class="btn btn-light w-100" type="submit">Entrar</button>
+      <div id="loginError" class="text-warning small mt-3"></div>
+    </form>
+  </div>
+
+  <div class="shell d-flex">
+    <aside class="sidebar" id="sidebar">
+      <div class="d-flex align-items-center gap-2 px-2 mb-4">
+        <div class="brand-mark">O</div>
+        <div>
+          <strong>Ogwiro</strong>
+          <div class="small text-secondary">Ofertas automáticas</div>
+        </div>
+      </div>
+      <nav class="d-grid gap-1" id="menu">
+        <button class="nav-btn active" data-view="home" type="button"><i class="bi bi-grid"></i> Painel</button>
+        <button class="nav-btn" data-view="offers" type="button"><i class="bi bi-tag"></i> Ofertas</button>
+        <button class="nav-btn" data-view="manual" type="button"><i class="bi bi-pencil-square"></i> Oferta manual</button>
+        <button class="nav-btn" data-view="shops" type="button"><i class="bi bi-collection"></i> Grupos</button>
+        <button class="nav-btn" data-view="niches" type="button"><i class="bi bi-funnel"></i> Nichos</button>
+        <button class="nav-btn" data-view="stores" type="button"><i class="bi bi-bag"></i> Vitrines</button>
+        <button class="nav-btn" data-view="channels" type="button"><i class="bi bi-send"></i> Canais</button>
+        <button class="nav-btn" data-view="timing" type="button"><i class="bi bi-clock"></i> Tempos</button>
+        <button class="nav-btn" data-view="message" type="button"><i class="bi bi-chat-left-text"></i> Mensagem</button>
+        <button class="nav-btn" data-view="logs" type="button"><i class="bi bi-journal-text"></i> Registro</button>
+      </nav>
+      <div class="mt-auto small text-secondary px-2 pt-4">Somente neste computador, porta 8787.</div>
+    </aside>
+    <div class="backdrop" id="backdrop"></div>
+
+    <div class="workspace">
+      <header class="topbar">
+        <div class="d-flex flex-wrap align-items-center gap-2 px-3 px-lg-4 py-3">
+          <button class="btn btn-outline-dark d-lg-none" id="openMenu" type="button" aria-label="Abrir menu"><i class="bi bi-list"></i></button>
+          <div class="me-auto">
+            <div class="kicker" id="viewKicker">Visão geral</div>
+            <div class="live-pill is-off" id="livePill">
+              <span class="live-dot" id="liveDot"></span>
+              <strong id="liveLabel">Pausado</strong>
+            </div>
+          </div>
+          <button class="btn btn-outline-dark btn-sm" id="btnFetch" type="button">Buscar</button>
+          <button class="btn btn-outline-dark btn-sm" id="btnTest" type="button">Testar envio</button>
+          <button class="btn btn-dark btn-sm" id="btnToggle" type="button">Ativar</button>
+        </div>
+        <div class="group-bar">
+          <div class="group-tabs" id="openShops" aria-label="Grupos abertos"></div>
+        </div>
+      </header>
+
+      <main class="px-3 px-lg-4 py-4">
+        <section id="view-home">
+          <p class="text-secondary" id="shopScope"></p>
+          <div class="row g-3 mb-3" id="stats"></div>
+          <div class="d-flex flex-wrap gap-2 mb-3" id="nicheChips"></div>
+          <div class="row g-3">
+            <div class="col-xl-7"><div class="row g-3" id="marketStatus"></div></div>
+            <div class="col-xl-5">
+              <article class="panel h-100">
+                <div class="panel-pad border-bottom"><span class="kicker">Últimas ofertas</span></div>
+                <div id="homeOffers"></div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section id="view-offers" class="d-none">
+          <div class="d-flex flex-wrap gap-2 mb-3" id="offerFilters"></div>
+          <div class="panel" id="offerList"></div>
+        </section>
+
+        <section id="view-shops" class="d-none">
+          <p class="text-secondary">Cada cartão é um grupo. Ativar e pausar valem só para aquele grupo. Clique no resumo do cartão para abri-lo na barra. Resetar devolve nichos, vitrines, canais, tokens, tempos, mensagem e descrição ao padrão, e mantém o nome e se o grupo está ligado. A senha do painel continua única.</p>
+          <article class="panel panel-pad mb-3">
+            <div class="row g-2 align-items-end">
+              <div class="col-md-8">
+                <label class="form-label" for="newShopName">Novo grupo</label>
+                <input class="form-control" id="newShopName" maxlength="40" placeholder="Ex: Minha Loja">
+              </div>
+              <div class="col-md-4">
+                <button class="btn btn-dark w-100" id="addShop" type="button"><i class="bi bi-plus-lg"></i> Criar grupo</button>
+              </div>
+            </div>
+            <p class="field-hint mb-0 mt-2">O grupo nasce com a configuração padrão e os tokens vazios. Abra ele e preencha o bot, o chat e as chaves de cada vitrine.</p>
+          </article>
+          <div class="row g-3" id="shopList"></div>
+          <button class="btn btn-dark mt-3" id="saveShops" type="button">Salvar nomes e descrições</button>
+        </section>
+
+        <section id="view-niches" class="d-none">
+          <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
+            <p class="text-secondary mb-0">Os nichos valem só para o grupo aberto na barra. Cada um escolhe as palavras, o desconto mínimo e a faixa de preço. O bot busca só nas vitrines marcadas. Se nenhum nicho estiver ligado, entram as palavras de cada vitrine.</p>
+            <button class="btn btn-outline-dark" id="addNiche" type="button"><i class="bi bi-plus-lg"></i> Novo nicho</button>
+          </div>
+          <div class="row g-3" id="nicheList"></div>
+          <div class="d-flex flex-wrap gap-2 mt-3">
+            <button class="btn btn-dark" id="saveNiches" type="button">Salvar nichos</button>
+            <button class="btn btn-outline-dark" type="button" data-reset="niches">Resetar</button>
+          </div>
+        </section>
+
+        <section id="view-stores" class="d-none">
+          <p class="text-secondary">Estas vitrines e estes tokens valem só para o grupo aberto na barra. O Mercado Livre abre a página no Chrome, porque a API pública responde 403. O campo da etiqueta é o do Linkbuilder. Amazon, Shopee e AliExpress usam a API de afiliados da sua conta. As palavras daqui só valem quando não há nicho ativo para a vitrine. O intervalo da busca automática fica em Tempos.</p>
+          <div class="row g-3">
+            <div class="col-xl-6">
+              <article class="panel panel-pad h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h2 class="h5 mb-0">Mercado Livre</h2>
+                  <div class="form-check form-switch m-0">
+                    <input class="form-check-input" type="checkbox" data-path="marketplaces.mercadolivre.enabled" id="mlOn">
+                  </div>
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-4"><label class="form-label">Site</label><input class="form-control" data-path="marketplaces.mercadolivre.site"></div>
+                  <div class="col-md-4"><label class="form-label">Desconto mínimo (%)</label><input class="form-control" type="number" min="0" data-type="number" data-path="marketplaces.mercadolivre.minDiscount"></div>
+                  <div class="col-md-4"><label class="form-label">Limite por busca</label><input class="form-control" type="number" min="1" data-type="number" data-path="marketplaces.mercadolivre.limit"></div>
+                  <div class="col-md-8"><label class="form-label">Ordenação</label>
+                    <select class="form-select" data-path="marketplaces.mercadolivre.sort">
+                      <option value="relevance">Relevância</option>
+                      <option value="price_asc">Menor preço</option>
+                      <option value="price_desc">Maior preço</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6"><label class="form-label">Etiqueta do Linkbuilder</label><input class="form-control" data-path="marketplaces.mercadolivre.mattTool" placeholder="etiqueta em uso"></div>
+                  <div class="col-md-6"><label class="form-label">matt_word</label><input class="form-control" data-path="marketplaces.mercadolivre.mattWord"></div>
+                  <div class="col-12"><label class="form-label">Palavras-chave (uma por linha)</label><textarea class="form-control" rows="4" data-path="marketplaces.mercadolivre.keywords"></textarea></div>
+                </div>
+              </article>
+            </div>
+            <div class="col-xl-6">
+              <article class="panel panel-pad h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h2 class="h5 mb-0">Amazon</h2>
+                  <div class="form-check form-switch m-0">
+                    <input class="form-check-input" type="checkbox" data-path="marketplaces.amazon.enabled">
+                  </div>
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-6"><label class="form-label">Access key</label><input class="form-control" data-path="marketplaces.amazon.accessKey" autocomplete="off"></div>
+                  <div class="col-md-6"><label class="form-label">Secret key</label><input class="form-control" type="password" data-secret data-path="marketplaces.amazon.secretKey" autocomplete="new-password"><div class="hint-saved" data-hint="marketplaces.amazon.secretKey"></div></div>
+                  <div class="col-md-6"><label class="form-label">Partner tag</label><input class="form-control" data-path="marketplaces.amazon.partnerTag" placeholder="seutag-20"></div>
+                  <div class="col-md-6"><label class="form-label">Marketplace</label><input class="form-control" data-path="marketplaces.amazon.marketplace"></div>
+                  <div class="col-md-6"><label class="form-label">Host da API</label><input class="form-control" data-path="marketplaces.amazon.host"></div>
+                  <div class="col-md-6"><label class="form-label">Região</label><input class="form-control" data-path="marketplaces.amazon.region"></div>
+                  <div class="col-md-4"><label class="form-label">Desconto mínimo (%)</label><input class="form-control" type="number" min="0" data-type="number" data-path="marketplaces.amazon.minDiscount"></div>
+                  <div class="col-md-4"><label class="form-label">Limite</label><input class="form-control" type="number" min="1" data-type="number" data-path="marketplaces.amazon.limit"></div>
+                  <div class="col-12"><label class="form-label">Palavras-chave</label><textarea class="form-control" rows="3" data-path="marketplaces.amazon.keywords"></textarea></div>
+                </div>
+              </article>
+            </div>
+            <div class="col-xl-6">
+              <article class="panel panel-pad h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h2 class="h5 mb-0">Shopee</h2>
+                  <div class="form-check form-switch m-0">
+                    <input class="form-check-input" type="checkbox" data-path="marketplaces.shopee.enabled">
+                  </div>
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-6"><label class="form-label">App ID</label><input class="form-control" data-path="marketplaces.shopee.appId"></div>
+                  <div class="col-md-6"><label class="form-label">Secret</label><input class="form-control" type="password" data-secret data-path="marketplaces.shopee.secret" autocomplete="new-password"><div class="hint-saved" data-hint="marketplaces.shopee.secret"></div></div>
+                  <div class="col-md-4"><label class="form-label">Desconto mínimo (%)</label><input class="form-control" type="number" min="0" data-type="number" data-path="marketplaces.shopee.minDiscount"></div>
+                  <div class="col-md-4"><label class="form-label">Limite</label><input class="form-control" type="number" min="1" data-type="number" data-path="marketplaces.shopee.limit"></div>
+                  <div class="col-md-6"><label class="form-label">Divisor de preço</label><input class="form-control" type="number" min="1" data-type="number" data-path="marketplaces.shopee.priceDivisor"><div class="form-text">Use 100 ou 100000 se o valor vier multiplicado.</div></div>
+                  <div class="col-12"><label class="form-label">Palavras-chave</label><textarea class="form-control" rows="3" data-path="marketplaces.shopee.keywords"></textarea></div>
+                </div>
+              </article>
+            </div>
+            <div class="col-xl-6">
+              <article class="panel panel-pad h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h2 class="h5 mb-0">AliExpress</h2>
+                  <div class="form-check form-switch m-0">
+                    <input class="form-check-input" type="checkbox" data-path="marketplaces.aliexpress.enabled">
+                  </div>
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-6"><label class="form-label">App key</label><input class="form-control" data-path="marketplaces.aliexpress.appKey"></div>
+                  <div class="col-md-6"><label class="form-label">App secret</label><input class="form-control" type="password" data-secret data-path="marketplaces.aliexpress.appSecret" autocomplete="new-password"><div class="hint-saved" data-hint="marketplaces.aliexpress.appSecret"></div></div>
+                  <div class="col-md-6"><label class="form-label">Tracking ID</label><input class="form-control" data-path="marketplaces.aliexpress.trackingId"></div>
+                  <div class="col-md-6"><label class="form-label">Ordenação</label>
+                    <select class="form-select" data-path="marketplaces.aliexpress.sort">
+                      <option value="LAST_VOLUME_DESC">Mais vendidos</option>
+                      <option value="SALE_PRICE_ASC">Menor preço</option>
+                      <option value="SALE_PRICE_DESC">Maior preço</option>
+                    </select>
+                  </div>
+                  <div class="col-md-3"><label class="form-label">Moeda</label><input class="form-control" data-path="marketplaces.aliexpress.currency"></div>
+                  <div class="col-md-3"><label class="form-label">Idioma</label><input class="form-control" data-path="marketplaces.aliexpress.language"></div>
+                  <div class="col-md-3"><label class="form-label">País</label><input class="form-control" data-path="marketplaces.aliexpress.shipTo"></div>
+                  <div class="col-md-4"><label class="form-label">Desconto mínimo (%)</label><input class="form-control" type="number" min="0" data-type="number" data-path="marketplaces.aliexpress.minDiscount"></div>
+                  <div class="col-md-4"><label class="form-label">Limite</label><input class="form-control" type="number" min="1" data-type="number" data-path="marketplaces.aliexpress.limit"></div>
+                  <div class="col-12"><label class="form-label">Palavras-chave</label><textarea class="form-control" rows="3" data-path="marketplaces.aliexpress.keywords"></textarea></div>
+                </div>
+              </article>
+            </div>
+          </div>
+          <div class="d-flex flex-wrap gap-2 mt-3">
+            <button class="btn btn-dark" id="saveStores" type="button">Salvar vitrines</button>
+            <button class="btn btn-outline-dark" type="button" data-reset="marketplaces">Resetar</button>
+          </div>
+        </section>
+
+        <section id="view-channels" class="d-none">
+          <p class="text-secondary">O bot, o chat e o WhatsApp abaixo são só do grupo aberto na barra. Cada grupo guarda os próprios tokens.</p>
+          <div class="panel panel-pad mb-3">
+            <label class="form-label">Enviar ofertas para</label>
+            <select class="form-select" data-path="channels.mode" id="channelMode">
+              <option value="telegram">Somente Telegram</option>
+              <option value="whatsapp">Somente WhatsApp</option>
+              <option value="both">Telegram e WhatsApp ao mesmo tempo</option>
+              <option value="none">Não enviar (só coletar)</option>
+            </select>
+          </div>
+          <div class="row g-3">
+            <div class="col-lg-6">
+              <article class="panel panel-pad h-100" id="cardTelegram">
+                <h2 class="h5">Telegram</h2>
+                <p class="text-secondary small">Crie um bot com o @BotFather e coloque o bot no grupo ou canal. O chat ID de grupo começa com -100.</p>
+                <label class="form-label">Token do bot</label>
+                <input class="form-control mb-1" type="password" data-secret data-path="channels.telegram.botToken" autocomplete="new-password">
+                <div class="hint-saved mb-3" data-hint="channels.telegram.botToken"></div>
+                <label class="form-label">Chat ID</label>
+                <input class="form-control mb-3" data-path="channels.telegram.chatId" placeholder="-1001234567890">
+                <button class="btn btn-outline-dark btn-sm" id="checkTelegram" type="button">Verificar token</button>
+              </article>
+            </div>
+            <div class="col-lg-6">
+              <article class="panel panel-pad h-100" id="cardWhatsapp">
+                <h2 class="h5">WhatsApp</h2>
+                <p class="text-secondary small">Usa a API oficial da Meta. Texto livre funciona na janela de 24 horas. Fora dela, use um template aprovado com 4 variáveis: título, preço, desconto e link.</p>
+                <div class="row g-3">
+                  <div class="col-12"><label class="form-label">Token de acesso</label><input class="form-control" type="password" data-secret data-path="channels.whatsapp.accessToken" autocomplete="new-password"><div class="hint-saved" data-hint="channels.whatsapp.accessToken"></div></div>
+                  <div class="col-md-6"><label class="form-label">Phone Number ID</label><input class="form-control" data-path="channels.whatsapp.phoneNumberId"></div>
+                  <div class="col-md-6"><label class="form-label">Destinatário</label><input class="form-control" data-path="channels.whatsapp.recipient" placeholder="5511999999999"></div>
+                  <div class="col-md-4"><label class="form-label">Versão da API</label><input class="form-control" data-path="channels.whatsapp.apiVersion"></div>
+                  <div class="col-md-8"><label class="form-label">Formato</label>
+                    <select class="form-select" data-path="channels.whatsapp.delivery" id="waDelivery">
+                      <option value="text">Texto livre</option>
+                      <option value="template">Template aprovado</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6 wa-template"><label class="form-label">Nome do template</label><input class="form-control" data-path="channels.whatsapp.templateName"></div>
+                  <div class="col-md-6 wa-template"><label class="form-label">Idioma</label><input class="form-control" data-path="channels.whatsapp.templateLanguage"></div>
+                </div>
+                <button class="btn btn-outline-dark btn-sm mt-3" id="checkWhatsapp" type="button">Verificar credencial</button>
+              </article>
+            </div>
+          </div>
+          <div class="panel panel-pad mt-3">
+            <label class="form-label">Senha do painel</label>
+            <input class="form-control" type="password" data-secret data-path="dashboard.token" autocomplete="new-password" placeholder="Vazio deixa o painel aberto neste computador">
+            <div class="hint-saved" data-hint="dashboard.token"></div>
+            <div class="form-text">Se preencher, o próximo acesso pede essa senha. Deixe em branco para manter a senha atual.</div>
+            <button class="btn btn-link text-dark px-0" id="clearDash" type="button">Remover senha</button>
+          </div>
+          <div class="d-flex flex-wrap gap-2 mt-3">
+            <button class="btn btn-dark" id="saveChannels" type="button">Salvar canais</button>
+            <button class="btn btn-outline-dark" type="button" data-reset="channels">Resetar</button>
+          </div>
+        </section>
+
+        <section id="view-timing" class="d-none">
+          <article class="panel panel-pad mb-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+              <div>
+                <h2 class="h5 mb-1">Dicas</h2>
+                <p class="field-hint mb-0">Os textos de ajuda e os botões de interrogação explicam cada campo. Desligue se quiser a tela só com os nomes.</p>
+              </div>
+              <div class="form-check form-switch m-0">
+                <input class="form-check-input" type="checkbox" data-path="dashboard.showHints" id="showHints">
+                <label class="form-check-label" for="showHints">Mostrar dicas</label>
+              </div>
+            </div>
+          </article>
+
+          <div class="row g-3">
+            <div class="col-lg-5">
+              <article class="panel panel-pad h-100">
+                <h2 class="h5 mb-1">Busca automática</h2>
+                <p class="field-hint">Estes tempos valem para o grupo aberto na barra. A busca automática só acontece nos grupos ativados, cada um no próprio ritmo.</p>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" data-path="bot.autostart" id="autostart">
+                  <label class="form-check-label" for="autostart">Buscar este grupo quando o painel abrir <button type="button" class="hint-btn" data-bs-toggle="tooltip" data-bs-title="Ao abrir o Ogwiro, só este grupo começa a busca na hora, se estiver ativado. Os outros grupos não mudam." aria-label="Ajuda"><i class="bi bi-question-circle"></i></button></label>
+                </div>
+                <p class="field-hint">Ao abrir o Ogwiro, só este grupo começa a busca na hora, se estiver ativado. Os outros grupos não mudam.</p>
+                <div class="form-check mb-3">
+                  <input class="form-check-input" type="checkbox" data-path="bot.runOnStart" id="runOnStart">
+                  <label class="form-check-label" for="runOnStart">Buscar no instante em que o bot ligar <button type="button" class="hint-btn" data-bs-toggle="tooltip" data-bs-title="A primeira busca deste grupo acontece na hora. Desligado, o bot espera o intervalo de cada vitrine." aria-label="Ajuda"><i class="bi bi-question-circle"></i></button></label>
+                </div>
+                <p class="field-hint">A primeira busca deste grupo acontece na hora. Desligado, o bot espera o intervalo de cada vitrine.</p>
+                <div class="row g-3">
+                  <div class="col-sm-6">
+                    <label class="form-label">Mercado Livre, a cada (segundos) <button type="button" class="hint-btn" data-bs-toggle="tooltip" data-bs-title="Tempo até a próxima busca no Mercado Livre deste grupo. 300 segundos são 5 minutos. O mínimo é 30." aria-label="Ajuda"><i class="bi bi-question-circle"></i></button></label>
+                    <input class="form-control" type="number" min="30" data-type="number" data-path="marketplaces.mercadolivre.intervalSec">
+                    <p class="field-hint">300 segundos são 5 minutos. O mínimo é 30.</p>
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="form-label">Amazon, a cada (segundos) <button type="button" class="hint-btn" data-bs-toggle="tooltip" data-bs-title="Tempo até a próxima busca na Amazon deste grupo. O relógio só corre quando o grupo está ligado." aria-label="Ajuda"><i class="bi bi-question-circle"></i></button></label>
+                    <input class="form-control" type="number" min="30" data-type="number" data-path="marketplaces.amazon.intervalSec">
+                    <p class="field-hint">Só conta quando a Amazon está ligada em Vitrines.</p>
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="form-label">Shopee, a cada (segundos) <button type="button" class="hint-btn" data-bs-toggle="tooltip" data-bs-title="Tempo até a próxima busca na Shopee deste grupo. O relógio só corre quando o grupo está ligado." aria-label="Ajuda"><i class="bi bi-question-circle"></i></button></label>
+                    <input class="form-control" type="number" min="30" data-type="number" data-path="marketplaces.shopee.intervalSec">
+                    <p class="field-hint">Só conta quando a Shopee está ligada em Vitrines.</p>
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="form-label">AliExpress, a cada (segundos) <button type="button" class="hint-btn" data-bs-toggle="tooltip" data-bs-title="Tempo até a próxima busca no AliExpress deste grupo. O relógio só corre quando o grupo está ligado." aria-label="Ajuda"><i class="bi bi-question-circle"></i></button></label>
+                    <input class="form-control" type="number" min="30" data-type="number" data-path="marketplaces.aliexpress.intervalSec">
+                    <p class="field-hint">Só conta quando o AliExpress está ligado em Vitrines.</p>
+                  </div>
+                </div>
+              </article>
+            </div>
+            <div class="col-lg-7">
+              <article class="panel panel-pad h-100">
+                <h2 class="h5 mb-1">Envio</h2>
+                <p class="field-hint">Depois da busca, estes limites decidem quantas ofertas saem e com que pausa.</p>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label">Pausa entre mensagens (milissegundos) <button type="button" class="hint-btn" data-bs-toggle="tooltip" data-bs-title="Espera entre uma oferta publicada e a próxima. 2500 milissegundos são 2,5 segundos." aria-label="Ajuda"><i class="bi bi-question-circle"></i></button></label>
+                    <input class="form-control" type="number" min="0" data-type="number" data-path="timing.delayBetweenMessagesMs">
+                    <p class="field-hint">2500 = 2,5 segundos entre uma mensagem e outra.</p>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Máximo enviado por ciclo <button type="button" class="hint-btn" data-bs-toggle="tooltip" data-bs-title="Teto de ofertas publicadas deste grupo cada vez que o bot acorda, somando as vitrines. O que passar disso fica na fila." aria-label="Ajuda"><i class="bi bi-question-circle"></i></button></label>
+                    <input class="form-control" type="number" min="1" data-type="number" data-path="timing.maxOffersPerCycle">
+                    <p class="field-hint">Soma das vitrines deste grupo. O restante fica para o próximo ciclo.</p>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Máximo por vitrine <button type="button" class="hint-btn" data-bs-toggle="tooltip" data-bs-title="Quantas ofertas de uma mesma vitrine podem entrar no ciclo, antes do teto do grupo." aria-label="Ajuda"><i class="bi bi-question-circle"></i></button></label>
+                    <input class="form-control" type="number" min="1" data-type="number" data-path="timing.maxPerMarketplace">
+                    <p class="field-hint">Limite de cada vitrine dentro do ciclo deste grupo.</p>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Não repetir o mesmo produto (horas) <button type="button" class="hint-btn" data-bs-toggle="tooltip" data-bs-title="Depois de enviada, a oferta fica bloqueada por esse período. Ela pode aparecer de novo quando as horas acabarem." aria-label="Ajuda"><i class="bi bi-question-circle"></i></button></label>
+                    <input class="form-control" type="number" min="1" data-type="number" data-path="timing.dedupHours">
+                    <p class="field-hint">Evita publicar o mesmo anúncio de novo dentro desse prazo.</p>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Desistir da consulta após (segundos) <button type="button" class="hint-btn" data-bs-toggle="tooltip" data-bs-title="Se a vitrine não responder nesse tempo, aquela consulta é abandonada e o ciclo segue." aria-label="Ajuda"><i class="bi bi-question-circle"></i></button></label>
+                    <input class="form-control" type="number" min="5" data-type="number" data-path="timing.requestTimeoutSec">
+                    <p class="field-hint">Tempo máximo de espera por uma resposta da vitrine.</p>
+                  </div>
+                </div>
+                <hr>
+                <div class="form-check form-switch mb-2">
+                  <input class="form-check-input" type="checkbox" data-path="timing.quietHoursEnabled" id="quietOn">
+                  <label class="form-check-label" for="quietOn">Horário silencioso <button type="button" class="hint-btn" data-bs-toggle="tooltip" data-bs-title="Nesse intervalo o bot pode buscar, mas não publica. As ofertas ficam guardadas." aria-label="Ajuda"><i class="bi bi-question-circle"></i></button></label>
+                </div>
+                <p class="field-hint">Nesse intervalo o bot não publica. O relógio é o do seu computador. Se o início for depois do fim, o silêncio atravessa a meia-noite.</p>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label">Começa às</label>
+                    <input class="form-control" data-path="timing.quietStart" placeholder="23:00">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Termina às</label>
+                    <input class="form-control" data-path="timing.quietEnd" placeholder="08:00">
+                  </div>
+                </div>
+              </article>
+            </div>
+          </div>
+          <div class="d-flex flex-wrap gap-2 mt-3">
+            <button class="btn btn-dark" id="saveTiming" type="button">Salvar tempos</button>
+            <button class="btn btn-outline-dark" type="button" data-reset="timing">Resetar</button>
+          </div>
+        </section>
+
+        <section id="view-manual" class="d-none">
+          <p class="text-secondary">Monta uma oferta no grupo aberto na barra, com os mesmos campos de uma oferta coletada e o modelo da aba Mensagem. No Telegram a foto segue junto e o link vai no botão Pegar oferta.</p>
+          <div class="row g-3">
+            <div class="col-lg-7">
+              <article class="panel panel-pad">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label" for="manualStore">Vitrine</label>
+                    <select class="form-select" id="manualStore">
+                      <option value="mercadolivre">Mercado Livre</option>
+                      <option value="amazon">Amazon</option>
+                      <option value="shopee">Shopee</option>
+                      <option value="aliexpress">AliExpress</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label" for="manualNiche">Nicho</label>
+                    <select class="form-select" id="manualNiche"></select>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label" for="manualTitle">Título</label>
+                    <input class="form-control" id="manualTitle" maxlength="180" placeholder="Nome do produto">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label" for="manualPrice">Preço atual</label>
+                    <input class="form-control" id="manualPrice" inputmode="decimal" placeholder="79,90">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label" for="manualOriginal">Preço anterior</label>
+                    <input class="form-control" id="manualOriginal" inputmode="decimal" placeholder="149,90">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label" for="manualDiscount">Desconto (%)</label>
+                    <input class="form-control" id="manualDiscount" inputmode="numeric" placeholder="calculado">
+                    <p class="field-hint">Vazio usa a conta entre os dois preços. Se só houver o preço atual e o desconto, o preço anterior é calculado.</p>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label" for="manualUrl">Link da oferta</label>
+                    <input class="form-control" id="manualUrl" placeholder="https://">
+                    <p class="field-hint">No Mercado Livre, um link de produto recebe a etiqueta do Linkbuilder. Link curto (meli.la) permanece como está.</p>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label" for="manualImage">Foto do produto</label>
+                    <input class="form-control" id="manualImage" placeholder="https://">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label" for="manualRating">Avaliação</label>
+                    <input class="form-control" id="manualRating" placeholder="4.8 · +50mil vendidos">
+                  </div>
+                  <div class="col-md-6 d-flex align-items-end">
+                    <div class="d-flex flex-wrap gap-3 pb-2">
+                      <label class="form-check m-0"><input class="form-check-input" type="checkbox" id="manualPix"> <span class="form-check-label">Preço no Pix</span></label>
+                      <label class="form-check m-0"><input class="form-check-input" type="checkbox" id="manualShipping"> <span class="form-check-label">Frete grátis</span></label>
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label" for="manualNote">Nota extra</label>
+                    <input class="form-control" id="manualNote" maxlength="180" placeholder="Algo além da avaliação, do Pix e do frete">
+                  </div>
+                </div>
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                  <button class="btn btn-dark" id="sendManual" type="button">Enviar agora</button>
+                  <button class="btn btn-outline-dark" id="saveManual" type="button">Guardar na lista</button>
+                </div>
+              </article>
+            </div>
+            <div class="col-lg-5">
+              <div class="kicker mb-2">Prévia</div>
+              <div class="preview" id="manualPreview"></div>
+              <div class="preview-action">🛒 Pegar oferta</div>
+            </div>
+          </div>
+        </section>
+
+        <section id="view-message" class="d-none">
+          <p class="text-secondary">O modelo vale só para o grupo aberto na barra. Cada linha vira um pedaço da mensagem. Linhas com 🔥, ❌ De: e ✅ Por: saem em negrito, e o preço anterior sai riscado. A foto vai junto quando existe. O link não entra no texto: no Telegram ele fica no botão Pegar oferta.</p>
+          <div class="row g-3">
+            <div class="col-lg-6">
+              <article class="panel panel-pad">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                  <label class="form-label mb-0">Linhas do modelo</label>
+                  <button class="btn btn-outline-dark btn-sm" id="useCurrentTemplate" type="button">Usar modelo atual</button>
+                </div>
+                <div id="templateNotice" class="template-notice d-none">Este modelo ainda não usa o formato atual. Aplicar o modelo troca as linhas pelo texto que o envio formata hoje.</div>
+                <div class="d-grid gap-2" id="templateLines"></div>
+                <div class="d-flex flex-wrap gap-2 mt-3" id="templateVars"></div>
+                <textarea class="d-none" id="template" data-path="message.template"></textarea>
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                  <button class="btn btn-outline-dark btn-sm" id="addTemplateLine" type="button">Adicionar linha</button>
+                  <button class="btn btn-dark" id="saveMessage" type="button">Salvar mensagem</button>
+                  <button class="btn btn-outline-dark" type="button" data-reset="message">Resetar</button>
+                </div>
+              </article>
+            </div>
+            <div class="col-lg-6">
+              <div class="kicker mb-2">Prévia</div>
+              <div class="preview" id="preview"></div>
+              <div class="preview-action">🛒 Pegar oferta</div>
+            </div>
+          </div>
+        </section>
+
+        <section id="view-logs" class="d-none">
+          <article class="panel panel-pad" id="logList"></article>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div class="confirm-layer d-none" id="confirmLayer" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmBody">
+    <form class="confirm-card" id="confirmForm">
+      <div class="kicker" id="confirmKicker">Confirmação</div>
+      <h2 class="h5 mb-2" id="confirmTitle"></h2>
+      <p class="text-secondary mb-0" id="confirmBody"></p>
+      <div class="d-flex flex-wrap justify-content-end gap-2 mt-4">
+        <button class="btn btn-outline-dark" type="button" id="confirmCancel">Cancelar</button>
+        <button class="btn btn-danger" type="submit" id="confirmOk">Confirmar</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toasts"></div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
