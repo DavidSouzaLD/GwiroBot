@@ -136,6 +136,31 @@ body {
   border-bottom: 1px solid var(--line);
 }
 
+.command-line {
+  margin: 0 1.15rem 0.75rem;
+  border-radius: 12px;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.86rem;
+  line-height: 1.4;
+  background: #f4f5f7;
+  color: #4b5563;
+}
+
+.command-line.is-busy {
+  background: #e8f0ff;
+  color: #1d4ed8;
+}
+
+.command-line.is-ok {
+  background: #e7f7ee;
+  color: #157a42;
+}
+
+.command-line.is-error {
+  background: #fdecec;
+  color: #a32626;
+}
+
 .group-bar {
   display: flex;
   align-items: center;
@@ -246,6 +271,52 @@ body {
   font-size: 1.7rem;
   letter-spacing: -0.04em;
   margin-top: 0.2rem;
+}
+
+.stat-note {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.deck-facts {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.85rem 1rem;
+  margin: 1.15rem 0 0;
+}
+
+.deck-facts div {
+  min-width: 0;
+}
+
+.deck-facts dt {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.deck-facts dd {
+  margin: 0.15rem 0 0;
+  font-size: 0.95rem;
+}
+
+.market-error {
+  color: #a32626;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.log-level.is-error {
+  color: #a32626;
+  font-weight: 700;
+}
+
+.log-level.is-info {
+  color: #1d4ed8;
 }
 
 .kicker {
@@ -386,11 +457,21 @@ body {
 
 .log-line {
   display: grid;
-  grid-template-columns: 148px 64px 1fr;
+  grid-template-columns: 148px 72px minmax(0, 1fr);
   gap: 0.75rem;
   padding: 0.7rem 0;
   border-bottom: 1px solid var(--line);
   font-size: 0.92rem;
+}
+
+.log-line span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+#homeLogs {
+  max-height: 320px;
+  overflow: auto;
 }
 
 .hint-saved {
@@ -639,6 +720,28 @@ main > section:not(.d-none) {
   border: 1px solid #333;
   border-radius: 20px;
   padding: 1.5rem;
+}
+
+#homeLogs .log-line {
+  padding-left: 1.15rem;
+  padding-right: 1.15rem;
+}
+
+@media (max-width: 1199.98px) {
+  .deck-facts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 575.98px) {
+  .deck-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .log-line {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
 }
 
 @media (max-width: 991.98px) {

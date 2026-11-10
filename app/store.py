@@ -599,7 +599,7 @@ def sanitize_shop(shop: dict) -> dict:
 
     for name, market in shop["marketplaces"].items():
         market["enabled"] = bool(market.get("enabled"))
-        market["intervalSec"] = clamp_int(market.get("intervalSec"), 30, 86400, 300)
+        market["intervalSec"] = clamp_int(market.get("intervalSec"), 5, 86400, 300)
         market["minDiscount"] = clamp_int(market.get("minDiscount"), 0, 95, 10)
         market["limit"] = clamp_int(market.get("limit"), 1, 20, 5)
         market["keywords"] = str(market.get("keywords") or "")[:2000]

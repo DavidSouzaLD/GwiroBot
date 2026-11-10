@@ -83,10 +83,13 @@ class Engine:
                 "lastRun": info.get("lastRun"),
                 "lastFound": info.get("lastFound", 0),
                 "lastError": info.get("lastError", ""),
+                "intervalSec": int(shop["marketplaces"][name].get("intervalSec") or 300),
                 "nextRun": datetime.fromtimestamp(nxt, timezone.utc).isoformat(timespec="seconds") if nxt else None,
             }
+        timing = shop.get("timing") or {}
         return {
             "running": bool(shop.get("enabled")),
+            "quiet": self.quiet_now(shop),
             "busy": self.busy_shop == shop["id"],
             "startedAt": self.started_at,
             "lastCycleAt": self.last_cycle_at,
@@ -104,6 +107,15 @@ class Engine:
             "totals": slot.get("totals") or {},
             "marketplaces": markets,
             "channels": shop["channels"].get("mode"),
+            "timing": {
+                "delayMs": timing.get("delayBetweenMessagesMs", 0),
+                "maxOffers": timing.get("maxOffersPerCycle", 0),
+                "maxPer": timing.get("maxPerMarketplace", 0),
+                "dedupHours": timing.get("dedupHours", 0),
+                "quietEnabled": bool(timing.get("quietHoursEnabled")),
+                "quietStart": timing.get("quietStart") or "23:00",
+                "quietEnd": timing.get("quietEnd") or "08:00",
+            },
             "niches": [
                 {
                     "name": niche.get("name") or "Nicho",
@@ -142,11 +154,13 @@ class Engine:
             "niche": "Eletrônicos",
             "extra": "⭐️ 4.8 · +50mil vendidos · 💠 preço no Pix",
         }
+        before_chat = str(config["channels"]["telegram"].get("chatId") or "")
         try:
             results = deliver(config, sample, config["timing"]["requestTimeoutSec"])
         except ChannelError as error:
-            self.log("error", str(error))
+            self.log("error", str(error), config)
             return {"ok": False, "detail": str(error)}
+        self._keep_chat(config, before_chat)
         failed = [item for item in results if not item["ok"]]
         for item in results:
             level = "info" if item["ok"] else "error"
@@ -245,8 +259,9 @@ class Engine:
             order = [shop["id"]]
             grouped[shop["id"]] = chosen
         summaries = []
+        manual = plan is None
         for sid in order:
-            summaries.append(self._cycle_shop(sid, grouped[sid], send))
+            summaries.append(self._cycle_shop(sid, grouped[sid], send, manual))
         if not summaries:
             return {"ok": False, "detail": "Nenhum grupo para buscar."}
         return {
@@ -259,11 +274,11 @@ class Engine:
             "sendErrors": [error for item in summaries for error in item.get("sendErrors", [])],
         }
 
-    def _cycle_shop(self, shop_id: str, names: list[str], send: bool) -> dict:
+    def _cycle_shop(self, shop_id: str, names: list[str], send: bool, manual: bool = False) -> dict:
         config = self.store.snapshot_shop(shop_id)
         if config is None:
             return {"ok": False, "detail": "Grupo não encontrado.", "found": 0, "queued": 0, "sent": 0, "skipped": 0, "errors": [], "sendErrors": []}
-        if not config.get("enabled"):
+        if not manual and not config.get("enabled"):
             return {"ok": True, "found": 0, "queued": 0, "sent": 0, "skipped": 0, "errors": [], "sendErrors": []}
         self.busy_shop = config["id"]
         timeout = config["timing"]["requestTimeoutSec"]
@@ -371,9 +386,22 @@ class Engine:
             self.busy_shop = ""
         return summary
 
+    def _keep_chat(self, config: dict, previous: str) -> None:
+        current = str(config["channels"]["telegram"].get("chatId") or "")
+        if not current or current == previous:
+            return
+        shop = self.store.find_shop(config["id"])
+        if shop is None:
+            return
+        shop["channels"]["telegram"]["chatId"] = current
+        self.store.save_config()
+        self.log("info", "Chat ID do Telegram ajustado para o formato de supergrupo.", config)
+
     def _send_one(self, config: dict, offer: dict, mark: bool) -> dict:
+        before_chat = str(config["channels"]["telegram"].get("chatId") or "")
         try:
             results = deliver(config, offer, config["timing"]["requestTimeoutSec"])
+            self._keep_chat(config, before_chat)
         except ChannelError as error:
             self.log("error", str(error))
             self._store_offer(offer, "erro", str(error))

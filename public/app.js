@@ -1,5 +1,5 @@
 const views = {
-  home: "Visão geral",
+  home: "Painel",
   offers: "Ofertas encontradas",
   manual: "Oferta manual",
   shops: "Grupos",
@@ -73,6 +73,8 @@ let cleared = new Set();
 let offerFilter = "todas";
 let offers = [];
 let statusTimer = 0;
+let clockTimer = 0;
+let commandAt = 0;
 let templateLines = [];
 let focusedLine = 0;
 
@@ -768,46 +770,77 @@ function renderStatus(status) {
   paintGroupStatus();
   renderOpenGroups();
   $("#btnToggle").textContent = running ? "Pausar" : "Ativar";
-  $("#shopScope").textContent = status.shopName ? `Números, tokens e vitrines do grupo ${status.shopName}.` : "";
+  $("#deckTitle").textContent = status.shopName || "Grupo";
+  const timing = status.timing || {};
+  const quietText = !timing.quietEnabled
+    ? "desligado"
+    : status.quiet
+      ? `agora, até ${timing.quietEnd}`
+      : `${timing.quietStart}–${timing.quietEnd}`;
+  $("#shopScope").textContent = busy
+    ? "Uma busca deste grupo está em andamento."
+    : running
+      ? "O grupo está ligado. A busca automática segue o intervalo de cada vitrine."
+      : "O grupo está pausado. A busca automática está parada.";
+  const waiting = offers.filter((offer) => offer.status === "coletada" || offer.status === "na fila").length;
+  const failed = offers.filter((offer) => offer.status === "erro" || offer.status === "parcial").length;
   const totals = status.totals || {};
   const cards = [
-    ["Ciclos", totals.cycles || 0],
-    ["Ofertas vistas", totals.found || 0],
-    ["Enviadas", totals.sent || 0],
-    ["Canal", labelMode(status.channels)],
+    ["Ciclos", totals.cycles || 0, "buscas concluídas"],
+    ["Encontradas", totals.found || 0, "no histórico do grupo"],
+    ["Enviadas", totals.sent || 0, labelMode(status.channels)],
+    ["Na fila", waiting, failed ? `${failed} com erro` : "aguardando envio"],
   ];
-  $("#stats").innerHTML = cards.map(([label, value]) => `
-    <div class="col-6 col-xl-3"><article class="stat"><span class="kicker">${label}</span><b>${escapeHtml(value)}</b></article></div>
+  $("#stats").innerHTML = cards.map(([label, value, note]) => `
+    <div class="col-6 col-xl-3"><article class="stat"><span class="kicker">${label}</span><b>${escapeHtml(value)}</b><span class="stat-note">${escapeHtml(note)}</span></article></div>
+  `).join("");
+  const facts = [
+    ["Canal", labelMode(status.channels)],
+    ["Silêncio", quietText],
+    ["Pausa", `${Number(timing.delayMs) || 0} ms`],
+    ["Por ciclo", `${timing.maxOffers || 0} · ${timing.maxPer || 0}/vitrine`],
+    ["Não repetir", `${timing.dedupHours || 0} h`],
+    ["Último ciclo", status.lastCycleAt ? formatWhen(status.lastCycleAt) : "ainda não"],
+  ];
+  $("#deckFacts").innerHTML = facts.map(([label, value]) => `
+    <div><dt>${label}</dt><dd>${escapeHtml(value)}</dd></div>
   `).join("");
   const niches = status.niches || [];
-  $("#nicheChips").innerHTML = niches.length
-    ? niches.map((niche) => `<span class="chip ${niche.enabled ? "" : "off"}">${escapeHtml(niche.name)} · ${niche.enabled ? "ativo" : "pausado"}</span>`).join("")
+  const activeNiches = niches.filter((niche) => niche.enabled);
+  $("#nicheChips").innerHTML = activeNiches.length
+    ? activeNiches.map((niche) => `<span class="chip">${escapeHtml(niche.name)}</span>`).join("")
     : `<span class="chip off">Sem nichos ativos. A busca usa as palavras de cada vitrine.</span>`;
   const latest = offers.slice(0, 5);
   $("#homeOffers").innerHTML = latest.length
     ? latest.map((offer) => `
       <div class="home-offer">
         <div class="flex-grow-1">
-          <div class="small text-secondary">${escapeHtml(offer.storeLabel)}${offer.niche ? " · " + escapeHtml(offer.niche) : ""}</div>
+          <div class="small text-secondary">${escapeHtml(offer.storeLabel)}${offer.niche ? " · " + escapeHtml(offer.niche) : ""} · ${escapeHtml(offer.status || "coletada")}</div>
           <div class="fw-semibold">${escapeHtml(offer.title)}</div>
+          <div class="small">${escapeHtml(offer.priceLabel || "")}${offer.discount ? ` · ${offer.discount}%` : ""}</div>
         </div>
-        <span class="badge-off">${offer.discount || 0}%</span>
       </div>
     `).join("")
     : `<div class="panel-pad text-secondary">As ofertas coletadas aparecem aqui.</div>`;
-  $("#marketStatus").innerHTML = Object.entries(status.marketplaces || {}).map(([name, info]) => `
+  $("#marketStatus").innerHTML = Object.entries(status.marketplaces || {}).map(([name, info]) => {
+    const armed = running && info.enabled && !status.quiet;
+    const next = info.nextRun
+      ? `<span data-next="${escapeHtml(info.nextRun)}" data-armed="${armed ? "1" : "0"}">${escapeHtml(countdownText(info.nextRun, armed, info.enabled, running, status.quiet))}</span>`
+      : "sem horário";
+    return `
     <div class="col-md-6">
-      <article class="panel panel-pad ${info.enabled ? "" : "store-card inactive"}">
-        <div class="d-flex justify-content-between">
+      <article class="panel panel-pad h-100 ${info.enabled ? "" : "store-card inactive"}">
+        <div class="d-flex justify-content-between gap-2">
           <strong>${escapeHtml(info.label)}</strong>
-          <span class="small text-secondary">${info.enabled ? "ativa" : "desligada"}</span>
+          <span class="small text-secondary">${info.enabled ? `a cada ${info.intervalSec || 0}s` : "desligada"}</span>
         </div>
-        <div class="text-secondary small mt-2">Próxima busca: ${info.nextRun ? formatWhen(info.nextRun) : "—"}</div>
-        <div class="mt-2">Última leva: ${info.lastFound || 0}</div>
-        ${info.lastError ? `<div class="small mt-2">${escapeHtml(info.lastError)}</div>` : ""}
+        <div class="text-secondary small mt-2">Próxima: ${next}</div>
+        <div class="small mt-1">Última leva: ${info.lastFound || 0}${info.lastRun ? ` · ${escapeHtml(formatWhen(info.lastRun))}` : ""}</div>
+        ${info.lastError ? `<div class="market-error mt-2">${escapeHtml(info.lastError)}</div>` : ""}
       </article>
-    </div>
-  `).join("");
+    </div>`;
+  }).join("");
+  paintCountdowns();
 }
 
 function labelMode(mode) {
@@ -818,6 +851,30 @@ function formatWhen(iso) {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "—";
   return date.toLocaleString("pt-BR", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
+}
+
+function countdownText(iso, armed, enabled, running, quiet) {
+  if (!enabled) return "vitrine desligada";
+  if (!running) return "grupo pausado";
+  if (quiet) return "horário silencioso";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  const delta = Math.round((date.getTime() - Date.now()) / 1000);
+  if (!armed || delta <= 0) return "agora";
+  if (delta < 60) return `em ${delta}s`;
+  const minutes = Math.floor(delta / 60);
+  const seconds = delta % 60;
+  if (minutes < 60) return seconds ? `em ${minutes}min ${seconds}s` : `em ${minutes}min`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest ? `em ${hours}h ${rest}min` : `em ${hours}h`;
+}
+
+function paintCountdowns() {
+  document.querySelectorAll("[data-next]").forEach((node) => {
+    if (node.dataset.armed !== "1") return;
+    node.textContent = countdownText(node.dataset.next, true, true, true, false);
+  });
 }
 
 function renderOffers() {
@@ -849,18 +906,21 @@ function renderOffers() {
   `).join("");
 }
 
-function renderLogs(logs) {
-  if (!logs.length) {
-    $("#logList").innerHTML = `<div class="text-secondary">O registro aparece quando o bot busca ou envia.</div>`;
-    return;
-  }
-  $("#logList").innerHTML = logs.map((entry) => `
+function logLines(logs) {
+  return logs.map((entry) => `
     <div class="log-line">
       <span class="text-secondary">${formatWhen(entry.at)}</span>
-      <span>${escapeHtml(entry.level)}</span>
+      <span class="log-level is-${escapeHtml(entry.level || "info")}">${escapeHtml(entry.level || "info")}</span>
       <span>${escapeHtml(entry.message)}</span>
     </div>
   `).join("");
+}
+
+function renderLogs(logs) {
+  const empty = `<div class="panel-pad text-secondary">O registro aparece quando o bot busca ou envia.</div>`;
+  $("#logList").innerHTML = logs.length ? logLines(logs) : empty;
+  const home = $("#homeLogs");
+  if (home) home.innerHTML = logs.length ? logLines(logs.slice(0, 8)) : empty;
 }
 
 async function refresh() {
@@ -875,6 +935,7 @@ async function refresh() {
   renderStatus(current);
   renderOffers();
   renderLogs(logs);
+  paintCommand(logs);
 }
 
 function openView(name) {
@@ -1125,30 +1186,96 @@ $("#clearDash").addEventListener("click", () => {
   });
 });
 
-$("#btnToggle").addEventListener("click", async () => {
+async function toggleActiveGroup() {
   if (!config) return;
   const next = !config.enabled;
+  setCommand(next ? "Ativando o grupo…" : "Pausando o grupo…", "busy");
   try {
     await setGroupEnabled(config.id, next);
-    toast(next ? "Grupo ativado." : "Grupo pausado.");
+    const detail = next ? "Grupo ativado." : "Grupo pausado.";
+    setCommand(detail, "ok");
+    toast(detail);
   } catch (error) {
-    if (error.message !== "auth") toast("Não foi possível atualizar o grupo.", false);
+    if (error.message !== "auth") {
+      setCommand("Não foi possível atualizar o grupo.", "error");
+      toast("Não foi possível atualizar o grupo.", false);
+    }
   }
-});
+}
 
-$("#btnFetch").addEventListener("click", async () => {
-  toast("Busca iniciada.");
-  const summary = await api("/api/cycle", { send: false, shopId: config?.id || "" });
-  toast(summary.ok ? `${summary.found} oferta(s) encontrada(s).` : (summary.detail || "A busca não rodou."), Boolean(summary.ok));
-  await refresh();
-});
+function setCommand(text, tone) {
+  commandAt = Date.now();
+  const line = $("#commandLine");
+  if (!line) return;
+  line.className = "command-line is-" + tone;
+  $("#commandText").textContent = text;
+}
 
-$("#btnTest").addEventListener("click", async () => {
-  const result = await api("/api/test", { shopId: config?.id || "" });
-  const detail = (result.results || []).map((item) => item.detail).join(" ") || result.detail || "Teste concluído.";
-  toast(detail, Boolean(result.ok));
-  await refresh();
-});
+function briefLog(message) {
+  const flat = String(message || "").replace(/\s+/g, " ").trim();
+  return flat.length > 220 ? flat.slice(0, 217) + "…" : flat;
+}
+
+function paintCommand(logs) {
+  const latest = logs[0];
+  if (!latest) return;
+  const at = new Date(latest.at).getTime();
+  if (Number.isNaN(at) || at + 1500 < commandAt) return;
+  const line = $("#commandLine");
+  if (!line) return;
+  line.className = "command-line is-" + (latest.level === "error" ? "error" : "ok");
+  $("#commandText").textContent = briefLog(latest.message);
+  commandAt = at;
+}
+
+async function runSearch(send, stores) {
+  if (!config) return;
+  setCommand(send ? "Buscando e enviando…" : "Buscando ofertas…", "busy");
+  $("#btnFetch").disabled = true;
+  try {
+    const body = { send, shopId: config.id };
+    if (stores) body.stores = stores;
+    const summary = await api("/api/cycle", body);
+    const ok = Boolean(summary.ok);
+    const detail = summary.detail
+      || `${summary.found || 0} encontrada(s), ${summary.sent || 0} enviada(s), ${summary.skipped || 0} repetida(s).`;
+    setCommand(detail, ok ? "ok" : "error");
+    toast(detail, ok);
+    await refresh();
+  } finally {
+    $("#btnFetch").disabled = false;
+  }
+}
+
+async function runTest() {
+  setCommand("Enviando o teste…", "busy");
+  $("#btnTest").disabled = true;
+  try {
+    const result = await api("/api/test", { shopId: config?.id || "" });
+    const detail = (result.results || []).map((item) => item.detail).join(" ") || result.detail || "Teste concluído.";
+    setCommand(detail, result.ok ? "ok" : "error");
+    toast(detail, Boolean(result.ok));
+    await refresh();
+  } finally {
+    $("#btnTest").disabled = false;
+  }
+}
+
+$("#btnToggle").addEventListener("click", () => toggleActiveGroup());
+$("#btnFetch").addEventListener("click", () => runSearch(false).catch((error) => {
+  if (error.message !== "auth") {
+    setCommand(error.message || "A busca não rodou.", "error");
+    toast(error.message || "A busca não rodou.", false);
+  }
+}));
+$("#btnTest").addEventListener("click", () => runTest().catch((error) => {
+  if (error.message !== "auth") {
+    setCommand(error.message || "O teste não rodou.", "error");
+    toast(error.message || "O teste não rodou.", false);
+  }
+}));
+$("#openLogs").addEventListener("click", () => openView("logs"));
+$("#openOffers").addEventListener("click", () => openView("offers"));
 
 $("#checkTelegram").addEventListener("click", async () => {
   await saveConfig();
@@ -1229,6 +1356,7 @@ async function boot() {
     await refresh();
     clearInterval(statusTimer);
     statusTimer = setInterval(() => refresh().catch(() => {}), 4000);
+    if (!clockTimer) clockTimer = setInterval(paintCountdowns, 1000);
   } catch (error) {
     if (error.message !== "auth") toast("Não consegui abrir o painel.", false);
   }

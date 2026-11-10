@@ -86,11 +86,52 @@ def deliver(config: dict, offer: dict, timeout: int) -> list[dict]:
     return results
 
 
+def telegram_chat_ids(chat_id: str) -> list[str]:
+    chat_id = str(chat_id or "").strip()
+    options = [chat_id] if chat_id else []
+    if re.fullmatch(r"-\d{6,}", chat_id) and not chat_id.startswith("-100"):
+        options.append("-100" + chat_id[1:])
+    return options
+
+
+def explain_telegram(detail: str) -> str:
+    text = str(detail or "O Telegram recusou a mensagem.")
+    low = text.lower()
+    if "chat not found" in low or "group chat was upgraded" in low:
+        return "Chat não encontrado. O bot precisa estar no grupo, e o chat ID de supergrupo começa com -100."
+    if "bot was blocked" in low:
+        return "O bot foi bloqueado nesse chat."
+    if "not enough rights" in low or "have no rights" in low or "not a member" in low:
+        return "O bot não pode publicar nesse chat. Coloque ele no grupo, com permissão de enviar mensagens."
+    if "can't parse" in low or "parse entities" in low:
+        return "O Telegram não aceitou a formatação da mensagem."
+    if "message is too long" in low:
+        return "A mensagem passou do limite do Telegram."
+    return text
+
+
 def send_telegram(settings: dict, offer: dict, text: str, timeout: int) -> str:
     token = str(settings.get("botToken") or "").strip()
-    chat_id = str(settings.get("chatId") or "").strip()
-    if not token or not chat_id:
+    chat_ids = telegram_chat_ids(str(settings.get("chatId") or ""))
+    if not token or not chat_ids:
         raise ChannelError("Informe o token do bot e o chat ID do Telegram.")
+    last = "O Telegram recusou a mensagem."
+    for index, chat_id in enumerate(chat_ids):
+        try:
+            detail = post_telegram(token, chat_id, offer, text, timeout)
+        except ChannelError as error:
+            last = str(error)
+            if index + 1 < len(chat_ids) and "chat not found" in last.lower():
+                continue
+            raise ChannelError(explain_telegram(last)) from error
+        if chat_id != str(settings.get("chatId") or "").strip():
+            settings["chatId"] = chat_id
+            return detail + " O chat ID foi ajustado para o formato de supergrupo."
+        return detail
+    raise ChannelError(explain_telegram(last))
+
+
+def post_telegram(token: str, chat_id: str, offer: dict, text: str, timeout: int) -> str:
     caption = caption_html(text)[:1024]
     payload = {"chat_id": chat_id, "parse_mode": "HTML"}
     button = offer_button(offer.get("url") or "")
@@ -108,6 +149,8 @@ def send_telegram(settings: dict, offer: dict, text: str, timeout: int) -> str:
         )
         if data.get("ok"):
             return "Foto publicada no Telegram."
+        if "chat not found" in str(data.get("description") or "").lower():
+            raise ChannelError(str(data.get("description")))
     payload.pop("photo", None)
     payload.pop("caption", None)
     payload["text"] = caption

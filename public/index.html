@@ -29,7 +29,7 @@
       <div class="d-flex align-items-center gap-2 px-2 mb-4">
         <div class="brand-mark">O</div>
         <div>
-          <strong>Gwiro</strong>
+          <strong>Gwiro Bot</strong>
           <div class="small text-secondary">Ofertas automáticas</div>
         </div>
       </div>
@@ -54,7 +54,7 @@
         <div class="d-flex flex-wrap align-items-center gap-2 px-3 px-lg-4 py-3">
           <button class="btn btn-outline-dark d-lg-none" id="openMenu" type="button" aria-label="Abrir menu"><i class="bi bi-list"></i></button>
           <div class="me-auto">
-            <div class="kicker" id="viewKicker">Visão geral</div>
+            <div class="kicker" id="viewKicker">Painel</div>
             <div class="live-pill is-off" id="livePill">
               <span class="live-dot" id="liveDot"></span>
               <strong id="liveLabel">Pausado</strong>
@@ -64,6 +64,9 @@
           <button class="btn btn-outline-dark btn-sm" id="btnTest" type="button">Testar envio</button>
           <button class="btn btn-dark btn-sm" id="btnToggle" type="button">Ativar</button>
         </div>
+        <div class="command-line is-idle" id="commandLine" role="status">
+          <span id="commandText">Pronto para um comando.</span>
+        </div>
         <div class="group-bar">
           <div class="group-tabs" id="openShops" aria-label="Grupos abertos"></div>
         </div>
@@ -71,14 +74,29 @@
 
       <main class="px-3 px-lg-4 py-4">
         <section id="view-home">
-          <p class="text-secondary" id="shopScope"></p>
+          <article class="panel panel-pad mb-3">
+            <span class="kicker">Controle do grupo</span>
+            <h2 class="h4 mb-1" id="deckTitle">Grupo</h2>
+            <p class="mb-0 text-secondary" id="shopScope"></p>
+            <dl class="deck-facts" id="deckFacts"></dl>
+          </article>
           <div class="row g-3 mb-3" id="stats"></div>
           <div class="d-flex flex-wrap gap-2 mb-3" id="nicheChips"></div>
           <div class="row g-3">
             <div class="col-xl-7"><div class="row g-3" id="marketStatus"></div></div>
-            <div class="col-xl-5">
-              <article class="panel h-100">
-                <div class="panel-pad border-bottom"><span class="kicker">Últimas ofertas</span></div>
+            <div class="col-xl-5 d-grid gap-3 align-content-start">
+              <article class="panel">
+                <div class="panel-pad border-bottom d-flex justify-content-between align-items-center">
+                  <span class="kicker">Registro</span>
+                  <button class="btn btn-link btn-sm text-dark px-0" id="openLogs" type="button">Abrir registro</button>
+                </div>
+                <div id="homeLogs"></div>
+              </article>
+              <article class="panel">
+                <div class="panel-pad border-bottom d-flex justify-content-between align-items-center">
+                  <span class="kicker">Últimas ofertas</span>
+                  <button class="btn btn-link btn-sm text-dark px-0" id="openOffers" type="button">Ver ofertas</button>
+                </div>
                 <div id="homeOffers"></div>
               </article>
             </div>
@@ -312,23 +330,23 @@
                 <p class="field-hint">A primeira busca deste grupo acontece na hora. Desligado, o bot espera o intervalo de cada vitrine.</p>
                 <div class="row g-3">
                   <div class="col-sm-6">
-                    <label class="form-label">Mercado Livre, a cada (segundos) <button type="button" class="hint-btn" data-bs-toggle="tooltip" data-bs-title="Tempo até a próxima busca no Mercado Livre deste grupo. 300 segundos são 5 minutos. O mínimo é 30." aria-label="Ajuda"><i class="bi bi-question-circle"></i></button></label>
-                    <input class="form-control" type="number" min="30" data-type="number" data-path="marketplaces.mercadolivre.intervalSec">
-                    <p class="field-hint">300 segundos são 5 minutos. O mínimo é 30.</p>
+                    <label class="form-label">Mercado Livre, a cada (segundos) <button type="button" class="hint-btn" data-bs-toggle="tooltip" data-bs-title="Tempo até a próxima busca no Mercado Livre deste grupo. 300 segundos são 5 minutos. O mínimo é 5." aria-label="Ajuda"><i class="bi bi-question-circle"></i></button></label>
+                    <input class="form-control" type="number" min="5" data-type="number" data-path="marketplaces.mercadolivre.intervalSec">
+                    <p class="field-hint">300 segundos são 5 minutos. O mínimo é 5.</p>
                   </div>
                   <div class="col-sm-6">
                     <label class="form-label">Amazon, a cada (segundos) <button type="button" class="hint-btn" data-bs-toggle="tooltip" data-bs-title="Tempo até a próxima busca na Amazon deste grupo. O relógio só corre quando o grupo está ligado." aria-label="Ajuda"><i class="bi bi-question-circle"></i></button></label>
-                    <input class="form-control" type="number" min="30" data-type="number" data-path="marketplaces.amazon.intervalSec">
+                    <input class="form-control" type="number" min="5" data-type="number" data-path="marketplaces.amazon.intervalSec">
                     <p class="field-hint">Só conta quando a Amazon está ligada em Vitrines.</p>
                   </div>
                   <div class="col-sm-6">
                     <label class="form-label">Shopee, a cada (segundos) <button type="button" class="hint-btn" data-bs-toggle="tooltip" data-bs-title="Tempo até a próxima busca na Shopee deste grupo. O relógio só corre quando o grupo está ligado." aria-label="Ajuda"><i class="bi bi-question-circle"></i></button></label>
-                    <input class="form-control" type="number" min="30" data-type="number" data-path="marketplaces.shopee.intervalSec">
+                    <input class="form-control" type="number" min="5" data-type="number" data-path="marketplaces.shopee.intervalSec">
                     <p class="field-hint">Só conta quando a Shopee está ligada em Vitrines.</p>
                   </div>
                   <div class="col-sm-6">
                     <label class="form-label">AliExpress, a cada (segundos) <button type="button" class="hint-btn" data-bs-toggle="tooltip" data-bs-title="Tempo até a próxima busca no AliExpress deste grupo. O relógio só corre quando o grupo está ligado." aria-label="Ajuda"><i class="bi bi-question-circle"></i></button></label>
-                    <input class="form-control" type="number" min="30" data-type="number" data-path="marketplaces.aliexpress.intervalSec">
+                    <input class="form-control" type="number" min="5" data-type="number" data-path="marketplaces.aliexpress.intervalSec">
                     <p class="field-hint">Só conta quando o AliExpress está ligado em Vitrines.</p>
                   </div>
                 </div>
