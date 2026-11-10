@@ -92,6 +92,8 @@ ML_CREATELINK = "https://www.mercadolivre.com.br/affiliate-program/api/v2/affili
 ML_ID = re.compile(r"(MLB-?\d{6,})")
 ML_FRESH_SECONDS = 180
 ML_PAGES_PER_CYCLE = 8
+ML_LOGIN_TIMEOUT_MS = 300_000  # 5 minutos para login/verificação manual
+
 # IDs da página de ofertas. A chave fica em minúsculas.
 ML_CATEGORIES = {
     "casa e utilidades": "MLB1574",
@@ -196,6 +198,7 @@ class _MlBrowser:
         pages: dict[str, tuple[float, list[dict]]] = {}
         cursor = 0
         link_ready = False
+        affiliate_ready = False
         shorts: dict[str, str] = {}
         while True:
             job = self._jobs.get()
@@ -205,6 +208,11 @@ class _MlBrowser:
             plans, done = job
             try:
                 playwright, context, page = _ml_open(playwright, context, page)
+
+                if not affiliate_ready:
+                    _ml_ensure_affiliate_login(page)
+                    affiliate_ready = True
+
                 cards, cursor, link_ready = self._fill(
                     page, plans, pages, cursor, link_ready, shorts
                 )
@@ -216,6 +224,7 @@ class _MlBrowser:
                 _ml_close(context, playwright)
                 playwright = context = page = None
                 link_ready = False
+                affiliate_ready = False
                 pages = {}
                 done.put((False, str(error)))
 
@@ -285,7 +294,7 @@ def _ml_close(context, playwright) -> None:
 
 
 def _ml_block(route) -> None:
-    if route.request.resource_type in {"image", "media", "font"}:
+    if route.request.resource_type in {"media", "font"}:
         route.abort()
     else:
         route.continue_()
@@ -294,37 +303,110 @@ def _ml_block(route) -> None:
 def _ml_profile() -> Path:
     from app.store import DATA
 
-    local = DATA / "ml_profile"
-    borrowed = Path(r"C:\Users\david\Downloads\bot-ofertas-telegram\data\ml_profile")
-    for folder in (local, borrowed):
-        if folder.exists() and any(folder.iterdir()):
-            return folder
-    local.mkdir(parents=True, exist_ok=True)
-    return local
+    profile = DATA / "ml_profile"
+    profile.mkdir(parents=True, exist_ok=True)
+    return profile
 
 
 def _ml_browser(pw):
     profile = _ml_profile()
+
     args = [
         "--disable-blink-features=AutomationControlled",
-        "--disable-extensions",
-        "--window-position=-32000,-32000",
-        "--window-size=1100,700",
+        "--window-size=1280,900",
     ]
+
     options = {
         "headless": False,
         "locale": "pt-BR",
+        "timezone_id": "America/Sao_Paulo",
         "args": args,
         "ignore_default_args": ["--enable-automation"],
         "no_viewport": True,
     }
+
     try:
-        return pw.chromium.launch_persistent_context(str(profile), channel="chrome", **options)
+        return pw.chromium.launch_persistent_context(
+            user_data_dir=str(profile),
+            channel="chrome",
+            **options,
+        )
     except Exception as error:
         if "chrome" not in str(error).lower():
-            raise SourceError(f"Não abri o Chrome da busca. {error}") from error
-        return pw.chromium.launch_persistent_context(str(profile), **options)
+            raise SourceError(
+                f"Não consegui abrir o Chrome do Mercado Livre. {error}"
+            ) from error
 
+        return pw.chromium.launch_persistent_context(
+            user_data_dir=str(profile),
+            **options,
+        )
+
+def _ml_ensure_affiliate_login(page) -> None:
+    login_markers = (
+        "login",
+        "registration",
+        "account-verification",
+        "captcha",
+    )
+
+    def needs_login(url: str) -> bool:
+        current = str(url or "").lower()
+        return any(marker in current for marker in login_markers)
+
+    try:
+        page.goto(
+            ML_LINKBUILDER,
+            wait_until="domcontentloaded",
+            timeout=30_000,
+        )
+    except Exception as error:
+        raise SourceError(
+            f"Não consegui abrir o Link Builder do Mercado Livre: {error}"
+        ) from error
+
+    if needs_login(page.url):
+        page.bring_to_front()
+
+        print(
+            "[Mercado Livre] Faça login na conta participante do "
+            "Programa de Afiliados na janela do Chrome."
+        )
+        print(
+            "[Mercado Livre] Conclua também qualquer código, confirmação "
+            "ou verificação solicitada. Aguardando até 5 minutos..."
+        )
+
+        try:
+            page.wait_for_function(
+                """markers => !markers.some(
+                    marker => location.href.toLowerCase().includes(marker)
+                )""",
+                arg=list(login_markers),
+                timeout=ML_LOGIN_TIMEOUT_MS,
+            )
+        except Exception as error:
+            raise SourceError(
+                "O login do Mercado Livre não foi concluído em 5 minutos. "
+                "A janela do Chrome continuará disponível; tente novamente "
+                "depois de concluir o login."
+            ) from error
+
+        # Após autenticar, abre novamente a ferramenta para confirmar o acesso.
+        page.goto(
+            ML_LINKBUILDER,
+            wait_until="domcontentloaded",
+            timeout=30_000,
+        )
+
+    if needs_login(page.url):
+        page.bring_to_front()
+        raise SourceError(
+            "O Mercado Livre ainda está exigindo autenticação. "
+            "Conclua o login/verificação na janela do Chrome e tente novamente."
+        )
+
+    print("[Mercado Livre] Link Builder acessível.")
 
 def _ml_fold(text: str) -> str:
     import unicodedata
@@ -531,8 +613,15 @@ def _ml_link(page, offers: list[dict], etiqueta: str, link_ready: bool, shorts: 
     if "linkbuilder" not in page.url:
         page.goto(ML_LINKBUILDER, wait_until="domcontentloaded", timeout=20000)
         link_ready = False
-    if "login" in page.url or "registration" in page.url:
-        return link_ready
+    if any(
+        marker in page.url.lower()
+        for marker in ("login", "registration", "account-verification", "captcha")
+    ):
+        page.bring_to_front()
+        raise SourceError(
+            "Sessão do Mercado Livre não autenticada. "
+            "Conclua o login de afiliado na janela do Chrome e tente novamente."
+        )
     if not link_ready:
         page.wait_for_timeout(400)
     urls = []
